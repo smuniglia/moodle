@@ -198,7 +198,11 @@ class profile_field_base {
             $data->id = $dataid;
             $DB->update_record('user_info_data', $data);
         } else {
-            $DB->insert_record('user_info_data', $data);
+            // Prevents to insert empty data when an admin edit a user profile.
+            $required = $DB->get_field('user_info_field', 'required', ['id' => $data->fieldid]);
+            if (($required && $data->data) || !$required) {
+                $DB->insert_record('user_info_data', $data);
+            }
         }
     }
 
