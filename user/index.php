@@ -352,7 +352,6 @@ if ($bulkoperations) {
     $options = new stdClass();
     $options->courseid = $course->id;
     $options->noteStateNames = note_get_state_names();
-    $options->stateHelpIcon = $OUTPUT->help_icon('publishstate', 'notes');
     $PAGE->requires->js_call_amd('core_user/participants', 'init', [$options]);
 }
 

@@ -45,7 +45,6 @@ define(['jquery', 'core/str', 'core/modal_factory', 'core/modal_events', 'core/t
 
         this.courseId = options.courseid;
         this.noteStateNames = options.noteStateNames;
-        this.stateHelpIcon = options.stateHelpIcon;
 
         this.attachEventListeners();
     };
@@ -68,12 +67,6 @@ define(['jquery', 'core/str', 'core/modal_factory', 'core/modal_events', 'core/t
      * @private
      */
     Participants.prototype.noteStateNames = {};
-
-    /**
-     * @var {String} stateHelpIcon
-     * @private
-     */
-    Participants.prototype.stateHelpIcon = "";
 
     /**
      * Private method
@@ -151,7 +144,6 @@ define(['jquery', 'core/str', 'core/modal_factory', 'core/modal_events', 'core/t
             }
         }
 
-        var context = {stateNames: states, stateHelpIcon: this.stateHelpIcon};
         var titlePromise = null;
         if (users.length == 1) {
             titlePromise = Str.get_string('addbulknotesingle', 'core_notes');
@@ -159,35 +151,56 @@ define(['jquery', 'core/str', 'core/modal_factory', 'core/modal_events', 'core/t
             titlePromise = Str.get_string('addbulknote', 'core_notes', users.length);
         }
 
-        return $.when(
-            ModalFactory.create({
-                type: ModalFactory.types.SAVE_CANCEL,
-                body: Templates.render('core_user/add_bulk_note', context)
-            }),
-            titlePromise
-        ).then(function(modal, title) {
-            // Keep a reference to the modal.
-            this.modal = modal;
-            this.modal.setTitle(title);
-            this.modal.setSaveButtonText(title);
+        var stringKeys = [
+            {
+                key: 'publishstate_help',
+                component: 'notes'
+            },
+            {
+                key: 'publishstate',
+                component: 'notes',
+            }
+        ];
 
-            // We want to focus on the action select when the dialog is closed.
-            this.modal.getRoot().on(ModalEvents.hidden, function() {
-                var notification = $('#user-notifications [role=alert]');
-                if (notification.length) {
-                    notification.focus();
-                } else {
-                    $(SELECTORS.BULKACTIONSELECT).focus();
-                }
-                this.modal.getRoot().remove();
-            }.bind(this));
+        return Str.get_strings(stringKeys).then(function(langStrings) {
+            var stateHelpIcon = {
+                "icon": {},
+                "ltr": true,
+                "text": langStrings[0],
+                "alt": langStrings[1]
+            };
 
-            this.modal.getRoot().on(ModalEvents.save, this.submitAddNote.bind(this, users));
+            return Templates.render('core/help_icon', stateHelpIcon).then(function(html) {
+                var context = {stateNames: states, stateHelpIcon: html};
+                return $.when(
+                    ModalFactory.create({
+                        type: ModalFactory.types.SAVE_CANCEL,
+                        body: Templates.render('core_user/add_bulk_note', context)
+                    }), titlePromise).then(function(modal, title) {
+                        // Keep a reference to the modal.
+                        this.modal = modal;
+                        this.modal.setTitle(title);
+                        this.modal.setSaveButtonText(title);
 
-            this.modal.show();
+                        // We want to focus on the action select when the dialog is closed.
+                        this.modal.getRoot().on(ModalEvents.hidden, function() {
+                            var notification = $('#user-notifications [role=alert]');
+                            if (notification.length) {
+                                notification.focus();
+                            } else {
+                                $(SELECTORS.BULKACTIONSELECT).focus();
+                            }
+                            this.modal.getRoot().remove();
+                        }.bind(this));
 
-            return this.modal;
-        }.bind(this));
+                        this.modal.getRoot().on(ModalEvents.save, this.submitAddNote.bind(this, users));
+
+                        this.modal.show();
+
+                        return this.modal;
+                    }.bind(this)).fail(Notification.exception);
+            }.bind(this)).fail(Notification.exception);
+        }.bind(this)).fail(Notification.exception);
     };
 
     /**
